@@ -1,103 +1,192 @@
+/* eslint-disable @next/next/no-img-element */
+"use client";
+
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { DownloadIcon } from "lucide-react";
+import { useState } from "react";
+
+interface GitHubReleaseAsset {
+  name: string;
+  browser_download_url: string;
+}
+
+interface GitHubRelease {
+  assets: GitHubReleaseAsset[];
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [isDownloading, setIsDownloading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+
+      // Fetch all releases from GitHub
+      const response = await fetch(
+        "https://api.github.com/repos/Goodheart-Labs/fact-checking-extension/releases"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch releases");
+      }
+
+      const releases: GitHubRelease[] = await response.json();
+
+      if (releases.length === 0) {
+        throw new Error("No releases found");
+      }
+
+      // Get the most recent release (first in the array)
+      const latestRelease = releases[0];
+
+      // Find the extension.chrome.zip asset
+      const extensionAsset = latestRelease.assets.find(
+        (asset) => asset.name === "extension.chrome.zip"
+      );
+
+      if (!extensionAsset) {
+        throw new Error("Extension asset not found in the latest release");
+      }
+
+      // Create a temporary link to trigger the download
+      const downloadLink = document.createElement("a");
+      downloadLink.href = extensionAsset.browser_download_url;
+      downloadLink.download = "extension.chrome.zip";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    } catch (error) {
+      console.error("Error downloading extension:", error);
+      alert("Failed to download the extension. Please try again later.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-[100dvh] max-w-4xl mx-auto">
+      {/* Hero Section */}
+      <div className="max-w-6xl mx-auto px-4 py-16 md:py-24">
+        <div className="flex flex-col items-center text-center space-y-8">
+          <Image
+            src="/logo.png"
+            alt="Is This True? Logo"
+            width={120}
+            height={120}
+          />
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+            Is This True?
+            {/* <span className="text-[#E89250]">(Beta)</span> */}
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl text-balance">
+            A simple Chrome extension that lets you fact-check text on any
+            webpage with a quick right-click. We&apos;re in beta, and we need
+            your help testing it!
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      </div>
+
+      {/* Installation Steps */}
+      <section className="px-4 space-y-12">
+        <h2 className="text-3xl font-bold text-center">
+          How to Install <span className="opacity-30">(Chrome Only)</span>
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <CustomCard
+            imgPath="/step-1.png"
+            imgAlt="Step 1"
+            title="1. Enable Developer Mode"
+            description="Open Chrome and go to chrome://extensions. Toggle Developer mode in the top right corner."
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+
+          <CustomCard
+            imgPath="/step-2.png"
+            imgAlt="Step 2"
+            title="2. Download and Unzip"
+            description="Download the extension files and extract/unzip the folder on your computer."
+          >
+            <Button
+              className="w-full"
+              onClick={handleDownload}
+              disabled={isDownloading}
+            >
+              <DownloadIcon className="w-4 h-4 mr-2" />
+              {isDownloading ? "Downloading..." : "Download Extension"}
+            </Button>
+          </CustomCard>
+
+          <CustomCard
+            imgPath="/step-3.gif"
+            imgAlt="Step 3"
+            title="3. Install the Extension"
+            description='On chrome://extensions, click "Load unpacked" and select the extracted extension folder.'
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+
+          <CustomCard
+            imgPath="/step-4.png"
+            imgAlt="Step 4"
+            title="4. Start Fact-Checking"
+            description='Visit any webpage, highlight some text, right-click, and select "Is this true?".'
           />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </div>
+      </section>
+
+      {/* Feedback Section */}
+      <section className="container mx-auto px-4 py-16 mb-16">
+        <div className="max-w-2xl mx-auto text-center p-8">
+          <h2 className="text-2xl font-bold mb-4">Feedback?</h2>
+          <p className="text-muted-foreground mb-6">
+            We&apos;d love to hear how it works for you! Reach out to Nathan
+            Young on{" "}
+            <a
+              href="https://x.com/NathanpmYoung"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              X @NathanpmYoung
+            </a>{" "}
+            with bugs, suggestions, or anything else.
+          </p>
+          <Button
+            variant="default"
+            onClick={() => window.open("https://x.com/NathanpmYoung", "_blank")}
+          >
+            Contact on X
+          </Button>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function CustomCard({
+  imgPath,
+  imgAlt,
+  title,
+  description,
+  children,
+}: {
+  imgPath: string;
+  imgAlt: string;
+  title: string;
+  description: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="p-0 overflow-hidden rounded-xl border border-neutral-300 shadow">
+      <img
+        src={imgPath}
+        alt={imgAlt}
+        className="aspect-[479/338] border-b border-neutral-300"
+      />
+      <div className="p-6">
+        <h3 className="font-bold mb-2 text-lg">{title}</h3>
+        <p className="text-muted-foreground mb-4">{description}</p>
+        {children}
+      </div>
     </div>
   );
 }
