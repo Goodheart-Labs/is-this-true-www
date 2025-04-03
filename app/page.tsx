@@ -3,67 +3,8 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { DownloadIcon } from "lucide-react";
-import { useState } from "react";
-
-interface GitHubReleaseAsset {
-  name: string;
-  browser_download_url: string;
-}
-
-interface GitHubRelease {
-  assets: GitHubReleaseAsset[];
-}
 
 export default function Home() {
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    try {
-      setIsDownloading(true);
-
-      // Fetch all releases from GitHub
-      const response = await fetch(
-        "https://api.github.com/repos/Goodheart-Labs/fact-checking-extension/releases"
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch releases");
-      }
-
-      const releases: GitHubRelease[] = await response.json();
-
-      if (releases.length === 0) {
-        throw new Error("No releases found");
-      }
-
-      // Get the most recent release (first in the array)
-      const latestRelease = releases[0];
-
-      // Find the extension.chrome.zip asset
-      const extensionAsset = latestRelease.assets.find(
-        (asset) => asset.name === "extension.chrome.zip"
-      );
-
-      if (!extensionAsset) {
-        throw new Error("Extension asset not found in the latest release");
-      }
-
-      // Create a temporary link to trigger the download
-      const downloadLink = document.createElement("a");
-      downloadLink.href = extensionAsset.browser_download_url;
-      downloadLink.download = "extension.chrome.zip";
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-    } catch (error) {
-      console.error("Error downloading extension:", error);
-      alert("Failed to download the extension. Please try again later.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   return (
     <main className="min-h-[100dvh] max-w-4xl mx-auto">
       {/* Hero Section */}
@@ -77,58 +18,69 @@ export default function Home() {
           />
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
             Is This True?
-            {/* <span className="text-[#E89250]">(Beta)</span> */}
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl text-balance">
             A simple Chrome extension that lets you fact-check text on any
-            webpage with a quick right-click. We&apos;re in beta, and we need
-            your help testing it!
+            webpage with a quick right-click. Get instant AI-powered
+            verification without leaving the page.
           </p>
+          <Button
+            size="lg"
+            onClick={() =>
+              window.open(
+                "https://chromewebstore.google.com/detail/is-this-true/hafbidloddepnejalikmidkefhpielee",
+                "_blank"
+              )
+            }
+            className="animate-bounce"
+          >
+            <Image
+              src="/chrome-web-store.png"
+              alt="Available in the Chrome Web Store"
+              width={24}
+              height={24}
+              className="mr-2"
+            />
+            Add to Chrome
+          </Button>
         </div>
       </div>
 
-      {/* Installation Steps */}
-      <section className="px-4 space-y-12">
-        <h2 className="text-3xl font-bold text-center">
-          How to Install <span className="opacity-30">(Chrome Only)</span>
-        </h2>
+      {/* How It Works */}
+      <section className="px-4 space-y-16 mb-24">
+        <h2 className="text-3xl font-bold text-center">How It Works</h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-16">
           <CustomCard
             imgPath="/step-1.png"
-            imgAlt="Step 1"
-            title="1. Enable Developer Mode"
-            description="Open Chrome and go to chrome://extensions. Toggle Developer mode in the top right corner."
+            imgAlt="Highlight text to fact-check"
+            title="1. Highlight Text"
+            description="Select any text you want to fact-check on any webpage."
+            stepNumber="01"
           />
 
           <CustomCard
             imgPath="/step-2.png"
-            imgAlt="Step 2"
-            title="2. Download and Unzip"
-            description="Download the extension files and extract/unzip the folder on your computer."
-          >
-            <Button
-              className="w-full"
-              onClick={handleDownload}
-              disabled={isDownloading}
-            >
-              <DownloadIcon className="w-4 h-4 mr-2" />
-              {isDownloading ? "Downloading..." : "Download Extension"}
-            </Button>
-          </CustomCard>
-
-          <CustomCard
-            imgPath="/step-3.gif"
-            imgAlt="Step 3"
-            title="3. Install the Extension"
-            description='On chrome://extensions, click "Load unpacked" and select the extracted extension folder.'
+            imgAlt="Right-click menu"
+            title="2. Right-Click"
+            description='Right-click the selected text and choose "Is this true?" from the menu.'
+            stepNumber="02"
           />
 
           <CustomCard
-            imgPath="/step-4.png"
-            imgAlt="Step 4"
-            title="4. Start Fact-Checking"
-            description='Visit any webpage, highlight some text, right-click, and select "Is this true?".'
+            imgPath="/step-3.png"
+            imgAlt="Get instant verification"
+            title="3. Get Instant Verification"
+            description="Receive an AI-powered assessment of the claim's accuracy with relevant context."
+            stepNumber="03"
+          />
+
+          <CustomCard
+            imgPath="/step-4.jpg"
+            imgAlt="Make informed decisions"
+            title="4. Make Informed Decisions"
+            description="Use the verification results to better understand the information and make informed decisions."
+            stepNumber="04"
           />
         </div>
       </section>
@@ -168,24 +120,33 @@ function CustomCard({
   title,
   description,
   children,
+  stepNumber,
 }: {
   imgPath: string;
   imgAlt: string;
   title: string;
   description: string;
   children?: React.ReactNode;
+  stepNumber: string;
 }) {
   return (
-    <div className="p-0 overflow-hidden rounded-xl border border-neutral-300 shadow">
-      <img
-        src={imgPath}
-        alt={imgAlt}
-        className="aspect-[479/338] border-b border-neutral-300"
-      />
-      <div className="p-6">
-        <h3 className="font-bold mb-2 text-lg">{title}</h3>
-        <p className="text-muted-foreground mb-4">{description}</p>
-        {children}
+    <div className="group relative">
+      <div className="absolute -left-4 -top-4 text-4xl font-bold text-neutral-100 select-none transition-transform group-hover:scale-110 duration-300">
+        {stepNumber}
+      </div>
+      <div className="space-y-6">
+        <div className="relative w-full aspect-[4/3] border border-neutral-300 rounded-lg shadow overflow-hidden mx-auto transition-transform group-hover:scale-105 duration-300">
+          <img
+            src={imgPath}
+            alt={imgAlt}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="space-y-2">
+          <h3 className="font-bold text-xl">{title}</h3>
+          <p className="text-muted-foreground leading-relaxed">{description}</p>
+          {children}
+        </div>
       </div>
     </div>
   );
